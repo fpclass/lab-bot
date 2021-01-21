@@ -1,0 +1,36 @@
+name:                slack-lab-bot
+version:             0.1.0.0
+github:              mbg/slack-lab-bot
+license:             MIT
+author:              Michael B. Gale <m.gale@warwick.ac.uk>
+maintainer:          Michael B. Gale <m.gale@warwick.ac.uk>
+copyright:           Copyright (c) Michael B. Gale
+
+dependencies:
+- base
+- slack
+- mtl
+- transformers
+- containers
+- data-default-class
+- text
+- optparse-applicative
+
+default-extensions:
+- OverloadedStrings
+- RecordWildCards
+
+library:
+  source-dirs: src
+  ghc-options:
+  - -Wall
+  - -Werror=missing-fields
+
+executables:
+  slack-lab-bot:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+    - -Wall
+    dependencies:
+    - slack-lab-bot

@@ -1,0 +1,7 @@
+resolver: lts-16.1
+packages:
+- .
+
+extra-deps:
+- git: https://github.com/fpclass/slack
+  commit: 51f78ac6c27241e359a4f7f2de594714a71421b7

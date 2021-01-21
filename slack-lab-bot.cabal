@@ -1,0 +1,63 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 31e3242a4dbdd8290890b0743f589dc44853b2fcb3a45d8295f31f9d3ba3cf02
+
+name:           slack-lab-bot
+version:        0.1.0.0
+homepage:       https://github.com/mbg/slack-lab-bot#readme
+bug-reports:    https://github.com/mbg/slack-lab-bot/issues
+author:         Michael B. Gale <m.gale@warwick.ac.uk>
+maintainer:     Michael B. Gale <m.gale@warwick.ac.uk>
+copyright:      Copyright (c) Michael B. Gale
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/mbg/slack-lab-bot
+
+library
+  exposed-modules:
+      Warwick.SGT.Bot
+      Warwick.SGT.CmdArgs
+  other-modules:
+      Paths_slack_lab_bot
+  hs-source-dirs:
+      src
+  default-extensions: OverloadedStrings RecordWildCards
+  ghc-options: -Wall -Werror=missing-fields
+  build-depends:
+      base
+    , containers
+    , data-default-class
+    , mtl
+    , optparse-applicative
+    , slack
+    , text
+    , transformers
+  default-language: Haskell2010
+
+executable slack-lab-bot
+  main-is: Main.hs
+  other-modules:
+      Paths_slack_lab_bot
+  hs-source-dirs:
+      app
+  default-extensions: OverloadedStrings RecordWildCards
+  ghc-options: -Wall
+  build-depends:
+      base
+    , containers
+    , data-default-class
+    , mtl
+    , optparse-applicative
+    , slack
+    , slack-lab-bot
+    , text
+    , transformers
+  default-language: Haskell2010
