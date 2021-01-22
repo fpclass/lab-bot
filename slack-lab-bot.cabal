@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b9d9ab90b1b098b846b75b786fdcd0dfd2ee2e3c8f9fcb214b9dd062a79c9900
+-- hash: 46e317c11208fc15d8bdb774f1bcfec839e0beceb3753c3dc44db391697ff53c
 
 name:           slack-lab-bot
 version:        0.1.0.0
@@ -44,6 +44,7 @@ library
     , unordered-containers
     , uow-apis
     , uuid
+    , uuid-types
   default-language: Haskell2010
 
 executable slack-lab-bot
@@ -68,4 +69,5 @@ executable slack-lab-bot
     , unordered-containers
     , uow-apis
     , uuid
+    , uuid-types
   default-language: Haskell2010

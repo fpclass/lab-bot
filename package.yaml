@@ -17,6 +17,7 @@ dependencies:
 - optparse-applicative
 - uow-apis
 - uuid
+- uuid-types
 - unordered-containers
 - case-insensitive
 

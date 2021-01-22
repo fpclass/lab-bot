@@ -18,6 +18,7 @@ import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
 import Data.Maybe
+import Data.UUID
 
 import System.Environment
 import System.Exit
@@ -32,6 +33,7 @@ import Slack.Types.Message
 import Warwick.Tabula
 import Warwick.Tabula.API
 import Warwick.Tabula.Member
+import Warwick.Tabula.Payload.SmallGroup
 
 import Warwick.SGT.CmdArgs
 
@@ -68,6 +70,42 @@ resolveMembers tbl = foldr go [] where
             -- we assume that if we have found a member, they have 
             -- a University ID
             Just member -> T.pack (fromJust (memberID member)) : r
+
+-- | `determineGroupMembers` @tabulaCfg groupId eventId week@ determines which
+-- students are already members of the event identified by @eventId@ for the
+-- week identified by @week@.
+determineGroupMembers 
+    :: APIConfig 
+    -> T.Text 
+    -> T.Text
+    -> Int 
+    -> IO (S.Set T.Text)
+determineGroupMembers cfg groupId eventId week = do
+    -- retrieve attendance for the small group
+    attRes <- withTabula Live cfg $ retrieveSmallGroupAttendance groupId
+
+    -- check that the request was successful
+    status <- case attRes of 
+        Left err -> do 
+            print err 
+            exitWith (ExitFailure (-1))
+        Right TabulaOK{..} -> pure tabulaData
+
+    -- a predicate for checking that an event ref refers to the event we
+    -- are interested in
+    let isEvent EventRef{..} = erId == eventId
+                            && erWeek == week
+
+    -- checks if a particular student is a member of the event we are 
+    -- interested in
+    let isRegistered StudentAttendance{..} = 
+            any (isEvent . seaEventRef) saEvents
+
+    -- return a list of all members who are already part of the event
+    -- in the given week
+    pure $ S.fromList 
+         $ map saUniversityID 
+         $ filter isRegistered (sgarAttendance status)
 
 -- | `runBot` @opts@ runs the lab bot using the configuration given by @opts@.
 runBot :: BotOpts -> IO () 
@@ -175,11 +213,30 @@ runBot MkBotOpts{..} = do
                 Right TabulaOK{..} -> pure $ resolveMembers 
                     (mkMemberMap $ HM.elems tabulaData) reactions
 
+            -- determine members of the event, so that we can add 
+            -- missing students to it for this week
+            alreadyRegistered <- determineGroupMembers 
+                tabulaCfg (toText grp) (toText event) wk
+
+            -- calculate the set of students not already registered for the
+            -- event in the given week
+            let toRegister = S.fromList attendeeIds S.\\ alreadyRegistered
+
+            -- print some debugging info
+            print attendeeIds
+            print toRegister
+
+            -- add all students to the event in this week who are not
+            -- already added
+            forM_ toRegister $ \universityId -> withTabula Live tabulaCfg $
+                addEventMember (ModuleCode mc) set grp event wk $
+                MkAddEventMemberReq universityId Nothing Nothing
+
             -- finally, register attendance for every member who is present
             res <- withTabula Live tabulaCfg $ 
                 registerAttendance (ModuleCode mc) set grp event wk $ 
                 MkRegisterAttendanceReq $ 
-                M.fromList [ (uid, "attendend-remotely") | uid <- attendeeIds ]
+                M.fromList [ (uid, "attended-remotely") | uid <- attendeeIds ]
 
             print res
 

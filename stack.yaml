@@ -6,4 +6,4 @@ extra-deps:
 - git: https://github.com/fpclass/slack
   commit: 51f78ac6c27241e359a4f7f2de594714a71421b7
 - git: https://github.com/mbg/uow-apis
-  commit: 2dec278bb7a83a0b2a74150abbb1fc70177a436a
+  commit: 2d037dd032f494cfbc4c403b1300988464454cb7
