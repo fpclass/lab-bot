@@ -15,6 +15,10 @@ dependencies:
 - data-default-class
 - text
 - optparse-applicative
+- uow-apis
+- uuid
+- unordered-containers
+- case-insensitive
 
 default-extensions:
 - OverloadedStrings

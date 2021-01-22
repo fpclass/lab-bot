@@ -13,6 +13,7 @@ module Warwick.SGT.CmdArgs (
 --------------------------------------------------------------------------------
 
 import Data.Text 
+import Data.UUID
 
 import Options.Applicative
 
@@ -22,7 +23,12 @@ data BotOpts = MkBotOpts {
     optsToken :: Maybe Text,
     optsChannelFrom :: Text,
     optsChannelTimestamp :: Text,
-    optsChannelTo :: Maybe Text
+    optsChannelTo :: Maybe Text,
+    optsRegisterModule :: Maybe Text,
+    optsRegisterSet :: Maybe UUID,
+    optsRegisterGroup :: Maybe UUID,
+    optsRegisterEvent :: Maybe UUID,
+    optsRegisterWeek :: Maybe Int
 } deriving (Eq, Show)
 
 botOptsP :: Parser BotOpts
@@ -31,6 +37,11 @@ botOptsP = MkBotOpts
     <*> strOption (long "from" <> metavar "CHANNEL")
     <*> strOption (long "message" <> metavar "TIMESTAMP")
     <*> optional (strOption (long "to" <> metavar "CHANNEL"))
+    <*> optional (strOption (long "module" <> metavar "MODULE"))
+    <*> optional (option auto (long "set" <> metavar "SET"))
+    <*> optional (option auto (long "group" <> metavar "GROUP"))
+    <*> optional (option auto (long "event" <> metavar "EVENT"))
+    <*> optional (option auto (long "week" <> metavar "WEEK"))
 
 opts :: ParserInfo BotOpts
 opts = info (botOptsP <**> helper) idm

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 31e3242a4dbdd8290890b0743f589dc44853b2fcb3a45d8295f31f9d3ba3cf02
+-- hash: b9d9ab90b1b098b846b75b786fdcd0dfd2ee2e3c8f9fcb214b9dd062a79c9900
 
 name:           slack-lab-bot
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
   ghc-options: -Wall -Werror=missing-fields
   build-depends:
       base
+    , case-insensitive
     , containers
     , data-default-class
     , mtl
@@ -40,6 +41,9 @@ library
     , slack
     , text
     , transformers
+    , unordered-containers
+    , uow-apis
+    , uuid
   default-language: Haskell2010
 
 executable slack-lab-bot
@@ -52,6 +56,7 @@ executable slack-lab-bot
   ghc-options: -Wall
   build-depends:
       base
+    , case-insensitive
     , containers
     , data-default-class
     , mtl
@@ -60,4 +65,7 @@ executable slack-lab-bot
     , slack-lab-bot
     , text
     , transformers
+    , unordered-containers
+    , uow-apis
+    , uuid
   default-language: Haskell2010

@@ -11,7 +11,9 @@ module Warwick.SGT.Bot ( runBot ) where
 
 import Control.Monad
 
+import Data.CaseInsensitive (CI, mk)
 import Data.Default.Class
+import qualified Data.HashMap.Lazy as HM
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
@@ -26,6 +28,10 @@ import Slack.API.Chat
 import Slack.API.Reactions
 import Slack.Types.User
 import Slack.Types.Message
+
+import Warwick.Tabula
+import Warwick.Tabula.API
+import Warwick.Tabula.Member
 
 import Warwick.SGT.CmdArgs
 
@@ -43,13 +49,33 @@ resolveUsers tbl = foldr (\uid r -> case M.lookup uid tbl of
     Nothing -> error "user not found"
     Just u -> u : r) []
 
+-- | `mkMemberMap` @members@ converts @members@ into a `M.Map` indexed by the
+-- members' email addresses.
+mkMemberMap :: [Member] -> M.Map (CI T.Text) Member
+mkMemberMap members = M.fromList 
+    [(mk $ T.pack $ fromJust $ memberEmail m, m) | m <- members]
+
+-- | `resolveMembers` @memberMap slackUsers@ retrieves the University IDs for
+-- all Slack users in @slackUsers@.
+resolveMembers :: M.Map (CI T.Text) Member -> [SlackUser] -> [T.Text]
+resolveMembers tbl = foldr go [] where 
+    go user r = 
+        -- we assume all Slack users who responded have an email address
+        -- attached; otherwise bad things(tm) happen
+        case M.lookup (mk $ fromJust $ profileEmail $ userProfile user) tbl of
+            -- the user isn't registered for the module, skip
+            Nothing -> r
+            -- we assume that if we have found a member, they have 
+            -- a University ID
+            Just member -> T.pack (fromJust (memberID member)) : r
+
 -- | `runBot` @opts@ runs the lab bot using the configuration given by @opts@.
 runBot :: BotOpts -> IO () 
 runBot MkBotOpts{..} = do
     -- get the Slack API token, either from the environment or the command
     -- line arguments if unavailable
     cfg <- MkSlackConfig . fromMaybe (fromMaybe "" optsToken) . fmap T.pack
-                           <$> lookupEnv "SLACK_TOKEN"
+                       <$> lookupEnv "SLACK_TOKEN"
 
     -- retrieve a list of all users on the Slack team   
     userRes <- withSlackClient cfg $ listUsers def
@@ -111,6 +137,53 @@ runBot MkBotOpts{..} = do
                     "*The following students are in attendance*:\n" <>
                     message
             }
+
+    let tabulaOpts = (,,,,) <$> optsRegisterModule 
+                            <*> optsRegisterSet 
+                            <*> optsRegisterGroup 
+                            <*> optsRegisterEvent
+                            <*> optsRegisterWeek
+
+    -- if we should register attendance on Tabula, get a list of all students
+    -- registered for the module, query their email addresses, look up their
+    -- University IDs based on email address, and then register attendance
+    case tabulaOpts of
+        Nothing -> pure ()
+        Just (mc,set,grp,event,wk) -> do
+            -- read the tabula credentials from a file
+            Just tabulaCfg <- readAPIConfig "bot.json"
+
+            -- try to retrieve all the members for the module
+            membersRes <- withTabula Live tabulaCfg $ 
+                listRegisteredUniversityIdsIn (ModuleCode mc) 2020
+
+            universityIds <- case membersRes of 
+                Left err -> do 
+                    putStrLn "Request to the Tabula module members API failed"
+                    exitWith (ExitFailure (-1))
+                Right TabulaOK{..} -> pure tabulaData
+
+            -- try to retrieve further info about each member, so that we have
+            -- their email addresses and can match them up with the Slack users
+            infoRes <- withTabula Live tabulaCfg $  retrieveMembers 
+                universityIds ["member.universityId", "member.email"]
+
+            attendeeIds <- case infoRes of 
+                Left err -> do 
+                    putStrLn "Request to the Tabula retrieve members API failed"
+                    exitWith (ExitFailure (-1))
+                Right TabulaOK{..} -> pure $ resolveMembers 
+                    (mkMemberMap $ HM.elems tabulaData) reactions
+
+            -- finally, register attendance for every member who is present
+            res <- withTabula Live tabulaCfg $ 
+                registerAttendance (ModuleCode mc) set grp event wk $ 
+                MkRegisterAttendanceReq $ 
+                M.fromList [ (uid, "attendend-remotely") | uid <- attendeeIds ]
+
+            print res
+
+            pure ()
 
     pure ()
 
