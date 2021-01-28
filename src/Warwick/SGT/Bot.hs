@@ -156,7 +156,7 @@ runBot MkBotOpts{..} = do
 
     -- construct a list of everyone in attendance, with their email addresses
     -- attached for easier identification
-    let message = T.concat $ flip map reactions $
+    let items = flip map reactions $
             \MkSlackUser{..} -> T.concat 
                 [ "- <@", userId, "> ("
                 , fromMaybe "Unknown email" (profileEmail userProfile) 
@@ -166,9 +166,29 @@ runBot MkBotOpts{..} = do
     -- if an output channel has been specified, send a Slack message to it
     -- with the list of students in attendance, otherwise print it to stdout
     case optsChannelTo of 
-        Nothing -> 
+        Nothing -> do
+            let message = T.concat items 
+
             putStrLn $ T.unpack message
-        Just to -> 
+        Just to -> do
+            -- figure out how many groups the students should be divided into
+            -- (one for each tutor) and how many students should be assigned
+            -- to each tutor
+            let groups = fromMaybe 1 optsSplit
+            let perGroup = length reactions `div` groups
+            let leftover = length reactions `mod` groups /= 0
+            let divideGroups _ [] = []
+                divideGroups n xs = ys : divideGroups n zs
+                    where (ys,zs) = splitAt n xs
+
+            let message = T.concat 
+                        $ map (\(i,xs) -> "\n_Tutor " 
+                                       <> T.pack (show i) 
+                                       <> "_\n" <> xs) 
+                        $ zip [0..] 
+                        $ map T.concat 
+                        $ divideGroups (if leftover then perGroup+1 else perGroup) items
+
             void $ withSlackClient cfg $ postMessage MkChatPostMessageReq{
                 postMessageChannel = to,
                 postMessageText = 

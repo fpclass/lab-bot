@@ -24,6 +24,7 @@ data BotOpts = MkBotOpts {
     optsChannelFrom :: Text,
     optsChannelTimestamp :: Text,
     optsChannelTo :: Maybe Text,
+    optsSplit :: Maybe Int,
     optsRegisterModule :: Maybe Text,
     optsRegisterSet :: Maybe UUID,
     optsRegisterGroup :: Maybe UUID,
@@ -37,6 +38,7 @@ botOptsP = MkBotOpts
     <*> strOption (long "from" <> metavar "CHANNEL")
     <*> strOption (long "message" <> metavar "TIMESTAMP")
     <*> optional (strOption (long "to" <> metavar "CHANNEL"))
+    <*> optional (option auto (long "split" <> metavar "NUMBER"))
     <*> optional (strOption (long "module" <> metavar "MODULE"))
     <*> optional (option auto (long "set" <> metavar "SET"))
     <*> optional (option auto (long "group" <> metavar "GROUP"))
